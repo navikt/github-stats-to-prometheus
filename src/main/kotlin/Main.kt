@@ -25,7 +25,7 @@ fun main() {
 
     val teamRepositories = findTeamRepositories(githubTeams, httpClient, githubApiUrl)
 
-    logger.info("Alle repositores: ${teamRepositories.map { it }}")
+    logger.info("Alle repositores (${teamRepositories.size}): ${teamRepositories.map { it }}")
 
     val repositoryInfos: List<RepositoryInfo> = findRepositoryInfo(httpClient, githubApiUrl, teamRepositories)
 
@@ -151,7 +151,7 @@ private fun findTeamRepositories(
         val filtered = repositories.filter {
             (it.permissions.push || it.permissions.admin || it.permissions.maintain) && !it.archived
         }.map { it.name }.toSet()
-        logger.info("Found ${repositories.size} repositories for team $team: $filtered")
+        logger.info("Found ${filtered.size} repositories for team $team: $filtered")
     }
 
     // Filter out archived repos & repos that doesn't belong to the team and duplicates
