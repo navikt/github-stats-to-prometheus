@@ -18,3 +18,9 @@ jobs:
 
       - name: Build shadowjar
         run: ./gradlew shadowjar
+
+  sif-code-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: navikt/sif-gha-workflows/.github/actions/sif-code-scan@v1
