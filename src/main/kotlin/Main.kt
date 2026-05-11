@@ -2,9 +2,9 @@ package no.nav.github_stats
 
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.Gauge
 import kotlinx.coroutines.runBlocking
@@ -16,18 +16,13 @@ import java.time.temporal.ChronoUnit
 
 val logger = LoggerFactory.getLogger("Main")
 
-suspend fun logError(context: String, e: Exception) {
-    val responseBody = if (e is ResponseException) {
-        try {
-            e.response.bodyAsText()
-        } catch (_: Exception) {
-            "Could not read response body"
-        }
-    } else {
-        "N/A"
+suspend inline fun <reified T> HttpResponse.bodyOrThrow(): T {
+    if (!status.isSuccess()) {
+        throw RuntimeException("HTTP $status: ${bodyAsText()}")
     }
-    logger.error("$context, Msg: [${e.message}], Response: [$responseBody]", e)
+    return body<T>()
 }
+
 
 fun main() {
     val applicationContext: ApplicationContext = ApplicationContext.Builder().build()
@@ -150,12 +145,18 @@ private fun findTeamRepositories(
     githubApiUrl: String
 ): Set<String> {
     val teamAndRepositories = runBlocking {
-        githubTeams.map {
+        githubTeams.mapNotNull {
             val urlString = githubApiUrl + "orgs/navikt/teams/$it/repos"
-            val body = httpClient.get(urlString) {
-                parameter("per_page", "100")
-            }.body<List<OrgRepository>>()
-            it to body
+            try {
+                val response = httpClient.get(urlString) {
+                    parameter("per_page", "100")
+                }
+                val body = response.bodyOrThrow<List<OrgRepository>>()
+                it to body
+            } catch (e: Exception) {
+                logger.error("Error fetching repositories for team: $it: ${e.message}", e)
+                null
+            }
         }
     }
 
@@ -189,16 +190,17 @@ private fun findRepositoryInfo(
         teamRepositories.mapNotNull { repository ->
             // Fetch all open pull requests from repository and find total size and dependabots PRs
             try {
-                val pullRequests = httpClient.get(githubApiUrl + "repos/navikt/$repository/pulls") {
+                val response = httpClient.get(githubApiUrl + "repos/navikt/$repository/pulls") {
                     parameter("per_page", "100")
                     parameter("state", "open")
-                }.body<List<PullRequest>>()
+                }
+                val pullRequests = response.bodyOrThrow<List<PullRequest>>()
                 RepositoryInfo(
                     repository,
                     pullRequests.size,
                     pullRequests.filter { it.user.login == "dependabot[bot]" })
             } catch (e: Exception) {
-                logError("Error fetching open pull requests for repository: $repository", e)
+                logger.error("Error fetching open pull requests for repository: $repository: ${e.message}", e)
                 null
             }
         }
@@ -209,12 +211,13 @@ private fun findRepositoryInfo(
     runBlocking {
         repositoryInfo.forEach {
             try {
-                it.dependabotAlerts = httpClient.get(githubApiUrl + "repos/navikt/${it.repository}/dependabot/alerts") {
+                val response = httpClient.get(githubApiUrl + "repos/navikt/${it.repository}/dependabot/alerts") {
                     parameter("per_page", "100")
                     parameter("state", "open")
-                }.body<List<DependabotAlert>>()
+                }
+                it.dependabotAlerts = response.bodyOrThrow<List<DependabotAlert>>()
             } catch (e: Exception) {
-                logError("Error fetching open dependabot alerts for repository: ${it.repository}", e)
+                logger.error("Error fetching dependabot alerts for repository: ${it.repository}: ${e.message}", e)
             }
         }
     }
@@ -225,11 +228,13 @@ private fun findRepositoryInfo(
     runBlocking {
         repositoryInfo.forEach {
             try {
-                it.latestCommit = httpClient.get(githubApiUrl + "repos/navikt/${it.repository}/commits") {
+                val response = httpClient.get(githubApiUrl + "repos/navikt/${it.repository}/commits") {
                     parameter("per_page", "1")
-                }.body<List<Commit>>().firstOrNull() ?: throw IllegalStateException("No commits found")
+                }
+                val commits = response.bodyOrThrow<List<Commit>>()
+                it.latestCommit = commits.firstOrNull() ?: throw IllegalStateException("No commits found")
             } catch (e: Exception) {
-                logError("Error fetching latest commit for repository: ${it.repository}", e)
+                logger.error("Error fetching latest commit for repository: ${it.repository}: ${e.message}", e)
             }
         }
     }
@@ -240,13 +245,13 @@ private fun findRepositoryInfo(
     runBlocking {
         repositoryInfo.forEach {
             try {
-                it.secretAlerts =
-                    httpClient.get(githubApiUrl + "repos/navikt/${it.repository}/secret-scanning/alerts") {
-                        parameter("per_page", "100")
-                        parameter("state", "open")
-                    }.body<List<SecretAlert>>().size
+                val response = httpClient.get(githubApiUrl + "repos/navikt/${it.repository}/secret-scanning/alerts") {
+                    parameter("per_page", "100")
+                    parameter("state", "open")
+                }
+                it.secretAlerts = response.bodyOrThrow<List<SecretAlert>>().size
             } catch (e: Exception) {
-                logError("Error fetching secret alerts for repository: ${it.repository}", e)
+                logger.error("Error fetching secret alerts for repository: ${it.repository}: ${e.message}", e)
             }
         }
     }
@@ -257,14 +262,14 @@ private fun findRepositoryInfo(
     runBlocking {
         repositoryInfo.forEach {
             try {
-                it.codeScanningCriticalAlerts =
-                    httpClient.get(githubApiUrl + "repos/navikt/${it.repository}/code-scanning/alerts") {
-                        parameter("per_page", "100")
-                        parameter("state", "open")
-                        parameter("severity", "critical")
-                    }.body<List<CodescanningAlert>>().size
+                val response = httpClient.get(githubApiUrl + "repos/navikt/${it.repository}/code-scanning/alerts") {
+                    parameter("per_page", "100")
+                    parameter("state", "open")
+                    parameter("severity", "critical")
+                }
+                it.codeScanningCriticalAlerts = response.bodyOrThrow<List<CodescanningAlert>>().size
             } catch (e: Exception) {
-                logError("Error fetching code scanning alerts for repository: ${it.repository}", e)
+                logger.error("Error fetching code scanning alerts for repository: ${it.repository}: ${e.message}", e)
             }
         }
     }
