@@ -2,7 +2,9 @@ package no.nav.github_stats
 
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.Gauge
 import kotlinx.coroutines.runBlocking
@@ -13,6 +15,19 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 val logger = LoggerFactory.getLogger("Main")
+
+suspend fun logError(context: String, e: Exception) {
+    val responseBody = if (e is ResponseException) {
+        try {
+            e.response.bodyAsText()
+        } catch (_: Exception) {
+            "Could not read response body"
+        }
+    } else {
+        "N/A"
+    }
+    logger.error("$context, Msg: [${e.message}], Response: [$responseBody]", e)
+}
 
 fun main() {
     val applicationContext: ApplicationContext = ApplicationContext.Builder().build()
@@ -183,7 +198,7 @@ private fun findRepositoryInfo(
                     pullRequests.size,
                     pullRequests.filter { it.user.login == "dependabot[bot]" })
             } catch (e: Exception) {
-                logger.error("Error fetching open pull requests for repository: $repository, Msg: [${e.message}]")
+                logError("Error fetching open pull requests for repository: $repository", e)
                 null
             }
         }
@@ -199,7 +214,7 @@ private fun findRepositoryInfo(
                     parameter("state", "open")
                 }.body<List<DependabotAlert>>()
             } catch (e: Exception) {
-                logger.error("Error fetching open dependabot alerts for repository: ${it.repository}, Msg: [${e.message}]")
+                logError("Error fetching open dependabot alerts for repository: ${it.repository}", e)
             }
         }
     }
@@ -214,7 +229,7 @@ private fun findRepositoryInfo(
                     parameter("per_page", "1")
                 }.body<List<Commit>>().firstOrNull() ?: throw IllegalStateException("No commits found")
             } catch (e: Exception) {
-                logger.error("Error fetching latest commit for repository: ${it.repository}, Msg: [${e.message}]")
+                logError("Error fetching latest commit for repository: ${it.repository}", e)
             }
         }
     }
@@ -231,7 +246,7 @@ private fun findRepositoryInfo(
                         parameter("state", "open")
                     }.body<List<SecretAlert>>().size
             } catch (e: Exception) {
-                logger.error("Error fetching secret alerts for repository: ${it.repository}, Msg: [${e.message}]")
+                logError("Error fetching secret alerts for repository: ${it.repository}", e)
             }
         }
     }
@@ -249,7 +264,7 @@ private fun findRepositoryInfo(
                         parameter("severity", "critical")
                     }.body<List<CodescanningAlert>>().size
             } catch (e: Exception) {
-                logger.error("Error fetching code scanning alerts for repository: ${it.repository}, Msg: [${e.message}]")
+                logError("Error fetching code scanning alerts for repository: ${it.repository}", e)
             }
         }
     }
