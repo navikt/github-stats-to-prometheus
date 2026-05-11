@@ -16,6 +16,8 @@ jobs:
     permissions:
       contents: read
     secrets: inherit
+    with:
+      scan-sensitive-data: false
 
   build:
     uses: navikt/sif-gha-workflows/.github/workflows/gradle-build.yml@main
