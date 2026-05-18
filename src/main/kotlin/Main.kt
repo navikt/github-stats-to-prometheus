@@ -315,38 +315,42 @@ data class RepositoryInfo(
 }
 
 fun generateLogReport(repositoryInfos: List<RepositoryInfo>) {
-    val dependabot = StringBuilder("**Mange dependabots**\n")
-    repositoryInfos
-        .filter { it.openDependenciesSum > 9 }
-        .sortedByDescending { it.openDependenciesSum }
-        .forEach { dependabot.appendLine(makeLine(it, it.openDependenciesSum, "/pulls")) }
+    val sections = mutableListOf<String>()
 
-    val critical = StringBuilder("**Kritisk dependabot security alert:**\n")
+    val security = StringBuilder()
     repositoryInfos
         .filter { it.criticalAlertsSum > 0 }
         .sortedByDescending { it.criticalAlertsSum }
-        .forEach { critical.appendLine(makeLine(it, it.criticalAlertsSum, "/security/dependabot")) }
-
-    val secret = StringBuilder("**Secrets alerts:**\n")
-    repositoryInfos
-        .filter { it.secretAlerts > 0 }
-        .sortedByDescending { it.secretAlerts }
-        .forEach { secret.appendLine(makeLine(it, it.secretAlerts, "/security/secret-scanning")) }
-
-    val codescanning = StringBuilder("**Kritiske kodescanning varsler:**\n")
+        .forEach { security.append("\n").append(makeLine(it, it.criticalAlertsSum, "/security/dependabot")) }
     repositoryInfos
         .filter { it.codeScanningCriticalAlerts > 0 }
         .sortedByDescending { it.codeScanningCriticalAlerts }
-        .forEach { codescanning.appendLine(makeLine(it, it.codeScanningCriticalAlerts, "/security/code-scanning")) }
+        .forEach { security.append("\n").append(makeLine(it, it.codeScanningCriticalAlerts, "/security/code-scanning")) }
+    if (security.isNotEmpty()) sections.add("**Kritiske sikkerhetsvarsler:**$security")
 
-    val oldCommits = StringBuilder("**Repoer med commits eldre enn 50 dager:**\n")
+    val dependabot = StringBuilder()
+    repositoryInfos
+        .filter { it.openDependenciesSum > 9 }
+        .sortedByDescending { it.openDependenciesSum }
+        .forEach { dependabot.append("\n").append(makeLine(it, it.openDependenciesSum, "/pulls")) }
+    if (dependabot.isNotEmpty()) sections.add("**Mange dependabots:**$dependabot")
+
+    val secret = StringBuilder()
+    repositoryInfos
+        .filter { it.secretAlerts > 0 }
+        .sortedByDescending { it.secretAlerts }
+        .forEach { secret.append("\n").append(makeLine(it, it.secretAlerts, "/security/secret-scanning")) }
+    if (secret.isNotEmpty()) sections.add("**Secrets alerts:**$secret")
+
+    val oldCommits = StringBuilder()
     repositoryInfos
         .filter { it.daysSinceLatestCommit > 50 }
         .sortedByDescending { it.daysSinceLatestCommit }
-        .forEach { oldCommits.appendLine(makeLine(it, it.daysSinceLatestCommit.toInt(), "")) }
+        .forEach { oldCommits.append("\n").append(makeLine(it, it.daysSinceLatestCommit.toInt(), "")) }
+    if (oldCommits.isNotEmpty()) sections.add("**Repoer med commits eldre enn 50 dager:**$oldCommits")
 
     logger.info("Rapport:")
-    logger.info("$dependabot\n$critical\n$codescanning\n$secret\n$oldCommits")
+    logger.info(sections.joinToString("\n"))
 }
 
 private fun makeLine(repo: RepositoryInfo, amount: Int, githubPostfix: String): String {

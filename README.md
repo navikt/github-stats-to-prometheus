@@ -8,13 +8,11 @@ Bruker nais/google secret  med navnet `sif-stats-github-pat` for k9saksbehandlin
 Secreten har 1 års varighet og trenger permissions: 
 
 ```
-repo 
-  repo:statusAccess 
-  repo_deployment
-  public_repo
-  security_events
+repo (Full control of private repositories — nødvendig for å lese pull requests og innhold i interne/private repoer)
 read:org
 ```
+
+> **Merk:** Det fulle `repo`-scopet er påkrevd fordi GitHub ikke tilbyr et granulært "read-only" scope for private/interne repoer med classic PATs. Uten dette scopet returnerer API-kall mot interne repoer 404. Alternativt kan en fine-grained PAT brukes med kun leserettigheter på spesifikke repoer.
 
 ---
 
