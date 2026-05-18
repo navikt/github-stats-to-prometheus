@@ -315,39 +315,38 @@ data class RepositoryInfo(
 }
 
 fun generateLogReport(repositoryInfos: List<RepositoryInfo>) {
-    val dependabot = StringBuilder("*Mange dependabots*")
+    val dependabot = StringBuilder("**Mange dependabots**\n")
     repositoryInfos
         .filter { it.openDependenciesSum > 9 }
         .sortedByDescending { it.openDependenciesSum }
         .forEach { dependabot.appendLine(makeLine(it, it.openDependenciesSum, "/pulls")) }
 
-    val critical = StringBuilder("*Kritisk dependabot security alert:*")
+    val critical = StringBuilder("**Kritisk dependabot security alert:**\n")
     repositoryInfos
         .filter { it.criticalAlertsSum > 0 }
         .sortedByDescending { it.criticalAlertsSum }
         .forEach { critical.appendLine(makeLine(it, it.criticalAlertsSum, "/security/dependabot")) }
 
-    val secret = StringBuilder("*Secrets alerts:*")
+    val secret = StringBuilder("**Secrets alerts:**\n")
     repositoryInfos
         .filter { it.secretAlerts > 0 }
         .sortedByDescending { it.secretAlerts }
         .forEach { secret.appendLine(makeLine(it, it.secretAlerts, "/security/secret-scanning")) }
 
-    val codescanning = StringBuilder("*Kritiske kodescanning varsler:*")
+    val codescanning = StringBuilder("**Kritiske kodescanning varsler:**\n")
     repositoryInfos
         .filter { it.codeScanningCriticalAlerts > 0 }
         .sortedByDescending { it.codeScanningCriticalAlerts }
         .forEach { codescanning.appendLine(makeLine(it, it.codeScanningCriticalAlerts, "/security/code-scanning")) }
 
-    val oldCommits = StringBuilder("*Repoer med commits eldre enn 50 dager:*")
+    val oldCommits = StringBuilder("**Repoer med commits eldre enn 50 dager:**\n")
     repositoryInfos
         .filter { it.daysSinceLatestCommit > 50 }
         .sortedByDescending { it.daysSinceLatestCommit }
         .forEach { oldCommits.appendLine(makeLine(it, it.daysSinceLatestCommit.toInt(), "")) }
 
-
     logger.info("Rapport:")
-    logger.info("$dependabot \n $critical \n $codescanning \n $secret \n $oldCommits")
+    logger.info("$dependabot\n$critical\n$codescanning\n$secret\n$oldCommits")
 }
 
 private fun makeLine(repo: RepositoryInfo, amount: Int, githubPostfix: String): String {
