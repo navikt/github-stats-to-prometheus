@@ -1,19 +1,11 @@
 version: 2
-registries:
-  ghcr:
-    type: docker-registry
-    url: ghcr.io
-    username: x-access-token
-    password: ${{secrets.READER_TOKEN}}
 updates:
   - package-ecosystem: gradle
     directory: "/"
     schedule:
-      interval: daily
+      interval: weekly
     cooldown:
-      default-days: 7
-      exclude:
-        - "no.nav.*"
+      default-days: 3
     groups:
       gradle:
         patterns: 
@@ -22,17 +14,10 @@ updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: daily
+      interval: weekly
     cooldown:
-      default-days: 7
+      default-days: 3
     groups:
       github:
         patterns: 
           - "*"
-
-  - package-ecosystem: docker
-    directory: "/"
-    schedule:
-      interval: daily
-    registries:
-      - ghcr

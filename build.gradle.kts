@@ -1,16 +1,7 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-val ktorVersion = "3.1.3"
-val logbackVersion = "1.5.18"
-val logbackEncoderVersion = "8.1"
-val micrometerVersion = "1.11.1"
-val prometheusVersion = "0.16.0"
-
 plugins {
-    kotlin("jvm") version "2.1.21"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.21"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    application
 }
 
 group = "no.nav"
@@ -19,38 +10,37 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+kotlin {
+    jvmToolchain(25)
+}
 
-    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-
-    implementation("io.prometheus:simpleclient:$prometheusVersion")
-    implementation("io.prometheus:simpleclient_pushgateway:$prometheusVersion")
-
-    implementation("net.logstash.logback:logstash-logback-encoder:$logbackEncoderVersion")
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
+application {
+    mainClass = "no.nav.github_stats.MainKt"
 }
 
 tasks {
-    withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "21"
-    }
-
-    withType<ShadowJar> {
-        archiveBaseName.set("app")
-        archiveClassifier.set("")
-        manifest {
-            attributes(
-                mapOf(
-                    "Main-Class" to "no.nav.github_stats.MainKt"
-                )
-            )
+    withType<Test> {
+        useJUnitPlatform()
+        testLogging {
+            showExceptions = true
         }
     }
+}
 
-    withType<Wrapper> {
-        gradleVersion = "8.2.1"
-    }
+dependencies {
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    implementation(libs.prometheus.simpleclient)
+    implementation(libs.prometheus.pushgateway)
+
+    implementation(libs.logback.classic)
+    implementation(libs.logstash.logback.encoder)
+
+    implementation(libs.nimbus.jose.jwt)
+
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.kotlin.test)
 }

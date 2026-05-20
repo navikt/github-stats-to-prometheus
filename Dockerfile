@@ -1,4 +1,7 @@
-FROM ghcr.io/navikt/sif-baseimages/java-chainguard-25:2026.05.04.0814Z
-LABEL org.opencontainers.image.source=https://github.com/navikt/sif-github-stats
+FROM europe-north1-docker.pkg.dev/cgr-nav/pull-through/nav.no/jre:openjdk-25
 
-COPY build/libs/app.jar /app/app.jar
+WORKDIR /app
+
+COPY build/install/app/ /app/
+
+ENTRYPOINT ["java", "-cp", "/app/lib/*", "no.nav.github_stats.MainKt"]

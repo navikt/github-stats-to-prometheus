@@ -1,0 +1,29 @@
+[versions]
+kotlin = "2.3.21"
+ktor = "3.5.0"
+logback = "1.5.32"
+logstash-encoder = "9.0"
+prometheus = "0.16.0"
+nimbus-jose-jwt = "10.9"
+kotlin-test = "2.3.21"
+
+[libraries]
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+prometheus-simpleclient = { module = "io.prometheus:simpleclient", version.ref = "prometheus" }
+prometheus-pushgateway = { module = "io.prometheus:simpleclient_pushgateway", version.ref = "prometheus" }
+
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-encoder" }
+
+nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus-jose-jwt" }
+
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin-test" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
