@@ -89,22 +89,32 @@ data class RepoMetrics(
 ) {
     companion object {
         private val groupUpdatesRegex = "(\\d+)\\s+updates?$".toRegex()
-        private val groupTitleRegex   = ".+group.+directory.+updates?$".toRegex()
+        private val groupTitleRegex = ".+group.+directory.+updates?$".toRegex()
     }
 
     val openDependenciesSum: Int by lazy {
         val titles = dependabotPrs.map { it.title }.toSet()
         val groupTitles = titles.filter { groupTitleRegex.matches(it) }.toSet()
-        titles.minus(groupTitles).size + groupTitles.sumOf { groupUpdatesRegex.find(it)?.groups?.lastOrNull()?.value?.toInt() ?: 0 }
+        titles.minus(groupTitles).size + groupTitles.sumOf {
+            groupUpdatesRegex.find(it)?.groups?.lastOrNull()?.value?.toInt() ?: 0
+        }
     }
 
     val criticalAlertsSum: Int by lazy { dependabotAlerts.count { it.security_vulnerability.severity == "critical" } }
     val highAlertsSum: Int by lazy { dependabotAlerts.count { it.security_vulnerability.severity == "high" } }
     val daysSinceLatestCommit: Long? by lazy {
-        latestCommit?.let { ChronoUnit.DAYS.between(LocalDate.parse(it.commit.author.date, DateTimeFormatter.ISO_DATE_TIME), LocalDate.now()) }
+        latestCommit?.let {
+            ChronoUnit.DAYS.between(
+                LocalDate.parse(
+                    it.commit.author.date,
+                    DateTimeFormatter.ISO_DATE_TIME
+                ), LocalDate.now()
+            )
+        }
     }
 
-    override fun toString() = "RepoMetrics(repo='$repository', openPRs=$openPRs, dependencyUpdates=$openDependenciesSum, " +
-        "criticalAlerts=$criticalAlertsSum, highAlerts=$highAlertsSum, secretAlerts=$secretAlerts, " +
-        "codeScanningCritical=$codeScanningCriticalAlerts, daysSinceLastCommit=$daysSinceLatestCommit)"
+    override fun toString() =
+        "RepoMetrics(repo='$repository', openPRs=$openPRs, dependencyUpdates=$openDependenciesSum, " +
+                "criticalAlerts=$criticalAlertsSum, highAlerts=$highAlertsSum, secretAlerts=$secretAlerts, " +
+                "codeScanningCritical=$codeScanningCriticalAlerts, daysSinceLastCommit=$daysSinceLatestCommit)"
 }

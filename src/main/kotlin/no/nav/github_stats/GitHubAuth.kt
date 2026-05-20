@@ -57,7 +57,8 @@ private fun decodePrivateKey(privateKeyBase64: String): RSAPrivateKey = try {
         .replace("-----BEGIN PRIVATE KEY-----", "")
         .replace("-----END PRIVATE KEY-----", "")
         .replace("\\s".toRegex(), "")
-    KeyFactory.getInstance("RSA").generatePrivate(PKCS8EncodedKeySpec(Base64.getDecoder().decode(cleaned))) as RSAPrivateKey
+    KeyFactory.getInstance("RSA")
+        .generatePrivate(PKCS8EncodedKeySpec(Base64.getDecoder().decode(cleaned))) as RSAPrivateKey
 } catch (e: Exception) {
     throw IllegalArgumentException("Failed to decode GITHUB_APP_PRIVATE_KEY: ${e.message}")
 }

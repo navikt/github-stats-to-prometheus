@@ -34,7 +34,7 @@ All repo-level metrics carry labels: `org`, `team`, `repository`.
 | `GITHUB_TEAMS` | Yes | — | Comma-separated team slugs |
 | `GITHUB_API_URL` | No | `https://api.github.com/` | GitHub API base URL |
 | `PUSH_GATEWAY_ADDRESS` | Yes | — | Prometheus Pushgateway URL. Set to `dummy` to skip push (local dev). |
-| `MINIMUM_ROLE` | No | `push` | Minimum permission to include a repo: `pull`, `triage`, `push`, `maintain`, `admin`. |
+| `MINIMUM_ROLE` | No | `admin` | Minimum permission to include a repo: `pull`, `triage`, `push`, `maintain`, `admin`. |
 | `EXCLUDED_REPOS` | No | — | Comma-separated repo names to exclude |
 | `GITHUB_PAT` | Either/or | — | Fine-grained personal access token |
 | `GITHUB_APP_ID` | Either/or | — | GitHub App numeric ID |
@@ -46,9 +46,9 @@ All repo-level metrics carry labels: `org`, `team`, `repository`.
 If `GITHUB_APP_ID` is present, GitHub App auth is used. Otherwise `GITHUB_PAT` is used.
 The job fails immediately at startup if neither is configured.
 
-#### Fine-grained PAT (simplest option)
+#### Fine-grained PAT (fallback only)
 
-Create a fine-grained PAT scoped to the target organisation with read-only permissions:
+Only use a PAT if you cannot create a GitHub App. Create a fine-grained PAT scoped to the target organisation with read-only permissions:
 
 - **Repository permissions:** `Contents`, `Pull requests`, `Dependabot alerts`,
   `Secret scanning alerts`, `Code scanning alerts` — all set to **Read-only**
@@ -58,7 +58,7 @@ Fine-grained PATs are preferred over classic PATs because permissions are minima
 explicit. Classic PATs require the broad `repo` scope to access private/internal repos,
 which grants write access.
 
-#### GitHub App (recommended for production)
+#### GitHub App (recommended)
 
 Set `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, and `GITHUB_APP_INSTALLATION_ID`.
 
@@ -91,7 +91,9 @@ pull < triage < push < maintain < admin
 docker run --rm \
   -e GITHUB_ORG=my-org \
   -e GITHUB_TEAMS=team-a,team-b \
-  -e GITHUB_PAT=github_pat_... \
+  -e GITHUB_APP_ID=123456 \
+  -e GITHUB_APP_INSTALLATION_ID=78901234 \
+  -e GITHUB_APP_PRIVATE_KEY=$(base64 -i private-key.pem) \
   -e PUSH_GATEWAY_ADDRESS=http://pushgateway:9091 \
   ghcr.io/your-org/github-stats-to-prometheus:latest
 ```
@@ -109,10 +111,10 @@ every key from the secret as an environment variable via `envFrom`.
 |---|---|
 | `GITHUB_ORG` | GitHub organisation slug |
 | `GITHUB_TEAMS` | Comma-separated team slugs |
-| `GITHUB_PAT` | Fine-grained PAT — **or** use the three App keys below |
 | `GITHUB_APP_ID` | GitHub App ID |
 | `GITHUB_APP_PRIVATE_KEY` | Base64-encoded PEM private key |
 | `GITHUB_APP_INSTALLATION_ID` | Installation ID |
+| `GITHUB_PAT` | Fine-grained PAT — only if not using a GitHub App |
 
 Use the following as a starting point for `.nais/nais.yaml`. Adjust `team`, `namespace`,
 `name`, and the secret name to match your setup:
@@ -169,7 +171,7 @@ spec:
             image: ghcr.io/your-org/github-stats-to-prometheus:latest
             envFrom:
               - secretRef:
-                  name: github-stats-secrets   # contains GITHUB_ORG, GITHUB_TEAMS, GITHUB_PAT etc.
+                  name: github-stats-secrets   # contains GITHUB_ORG, GITHUB_TEAMS, GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, GITHUB_APP_INSTALLATION_ID
             env:
             - name: PUSH_GATEWAY_ADDRESS
               value: http://pushgateway.monitoring:9091

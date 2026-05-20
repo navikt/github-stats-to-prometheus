@@ -19,11 +19,11 @@ enum class Role {
 }
 
 fun roleFromPermissions(p: Permissions): Role = when {
-    p.admin    -> Role.ADMIN
+    p.admin -> Role.ADMIN
     p.maintain -> Role.MAINTAIN
-    p.push     -> Role.PUSH
-    p.triage   -> Role.TRIAGE
-    else       -> Role.PULL
+    p.push -> Role.PUSH
+    p.triage -> Role.TRIAGE
+    else -> Role.PULL
 }
 
 sealed class AuthMode {
@@ -50,25 +50,30 @@ data class Config(
 
             fun optional(key: String, default: String = "") = env[key]?.takeIf { it.isNotBlank() } ?: default
 
-            val org        = require("GITHUB_ORG")
-            val teamsRaw   = require("GITHUB_TEAMS")
+            val org = require("GITHUB_ORG")
+            val teamsRaw = require("GITHUB_TEAMS")
             val pushGateway = require("PUSH_GATEWAY_ADDRESS")
-            val apiUrl        = optional("GITHUB_API_URL", "https://api.github.com/").trimEnd('/') + "/"
-            val apiVersion    = optional("GITHUB_API_VERSION", "2022-11-28")
+            val apiUrl = optional("GITHUB_API_URL", "https://api.github.com/").trimEnd('/') + "/"
+            val apiVersion = optional("GITHUB_API_VERSION", "2026-03-10")
 
             val minimumRole = try {
-                Role.fromString(optional("MINIMUM_ROLE", "push"))
+                Role.fromString(optional("MINIMUM_ROLE", "admin"))
             } catch (e: IllegalArgumentException) {
                 errors.add(e.message!!); Role.PUSH
             }
 
-            val excludedRepos = optional("EXCLUDED_REPOS").split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+            val excludedRepos =
+                optional("EXCLUDED_REPOS").split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
 
             val authMode: AuthMode? = when (val appId = env["GITHUB_APP_ID"]?.trim()) {
                 null -> when (val pat = env["GITHUB_PAT"]?.trim()) {
-                    null, "" -> { errors.add("Authentication required: set GITHUB_PAT or GITHUB_APP_ID + GITHUB_APP_PRIVATE_KEY + GITHUB_APP_INSTALLATION_ID"); null }
-                    else     -> AuthMode.Pat(pat)
+                    null, "" -> {
+                        errors.add("Authentication required: set GITHUB_PAT or GITHUB_APP_ID + GITHUB_APP_PRIVATE_KEY + GITHUB_APP_INSTALLATION_ID"); null
+                    }
+
+                    else -> AuthMode.Pat(pat)
                 }
+
                 else -> {
                     val privateKey = env["GITHUB_APP_PRIVATE_KEY"]?.trim()
                         ?: run { errors.add("GITHUB_APP_PRIVATE_KEY is required when GITHUB_APP_ID is set"); null }
@@ -82,15 +87,22 @@ data class Config(
                 }
             }
 
-            if (errors.isNotEmpty()) throw IllegalArgumentException(errors.joinToString("\n  - ", "Configuration errors:\n  - "))
+            if (errors.isNotEmpty()) throw IllegalArgumentException(
+                errors.joinToString(
+                    "\n  - ",
+                    "Configuration errors:\n  - "
+                )
+            )
 
             val teams = teamsRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
             if (teams.isEmpty()) throw IllegalArgumentException("GITHUB_TEAMS must contain at least one team slug")
 
             return Config(org, teams, apiUrl, apiVersion, pushGateway, minimumRole, excludedRepos, authMode!!).also {
-                log.info("org=${it.githubOrg} teams=${it.githubTeams} minimumRole=${it.minimumRole} " +
-                    "auth=${if (authMode is AuthMode.App) "App(${authMode.appId})" else "PAT"} " +
-                    "pushGateway=${if (pushGateway == "dummy") "dummy" else pushGateway}")
+                log.info(
+                    "org=${it.githubOrg} teams=${it.githubTeams} minimumRole=${it.minimumRole} " +
+                            "auth=${if (authMode is AuthMode.App) "App(${authMode.appId})" else "PAT"} " +
+                            "pushGateway=${if (pushGateway == "dummy") "dummy" else pushGateway}"
+                )
             }
         }
     }

@@ -82,10 +82,6 @@ Five source files, all in `src/main/kotlin/no/nav/github_stats/`:
 | `Metrics.kt` | Prometheus gauge registration, label helpers, push logic |
 | `Main.kt` | Thin orchestrator only — wires everything together |
 
-`src/main/kotlin/ApplicationContext.kt` and `src/main/kotlin/Main.kt` exist as empty stubs
-(old files that could not be deleted due to tooling restrictions). They contain no code.
-Delete them when convenient.
-
 All GitHub API calls are sequential (`runBlocking`). Retries are handled by the Ktor
 `HttpRequestRetry` plugin at the HTTP client level: 3 attempts, exponential backoff
 (1s → 2s → 4s), on IOException and 5xx only. Per-repo fetch errors are caught, logged
