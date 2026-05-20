@@ -16,6 +16,7 @@ kotlin {
 
 application {
     mainClass = "no.nav.github_stats.MainKt"
+    applicationName = "app"
 }
 
 tasks {
