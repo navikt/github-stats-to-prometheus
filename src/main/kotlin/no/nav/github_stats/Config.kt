@@ -28,7 +28,7 @@ fun roleFromPermissions(p: Permissions): Role = when {
 
 sealed class AuthMode {
     data class Pat(val token: String) : AuthMode()
-    data class App(val appId: Long, val privateKeyBase64: String, val installationId: Long) : AuthMode()
+    data class App(val appId: Long, val privateKey: String, val installationId: Long) : AuthMode()
 }
 
 data class Config(

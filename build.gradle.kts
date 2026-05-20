@@ -40,7 +40,8 @@ dependencies {
     implementation(libs.logback.classic)
     implementation(libs.logstash.logback.encoder)
 
-    implementation(libs.nimbus.jose.jwt)
+    implementation(libs.auth0.java.jwt)
+    implementation(libs.bouncy.castle.bcpkix)
 
     testImplementation(libs.ktor.client.mock)
     testImplementation(libs.kotlin.test)

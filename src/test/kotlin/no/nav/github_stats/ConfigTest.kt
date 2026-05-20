@@ -103,7 +103,7 @@ class ConfigTest {
         assertIs<AuthMode.App>(auth)
         assertEquals(123456L, auth.appId)
         assertEquals(78901234L, auth.installationId)
-        assertEquals("base64key==", auth.privateKeyBase64)
+        assertEquals("base64key==", auth.privateKey)
     }
 
     @Test

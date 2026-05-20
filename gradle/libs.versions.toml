@@ -4,7 +4,8 @@ ktor = "3.5.0"
 logback = "1.5.32"
 logstash-encoder = "9.0"
 prometheus = "0.16.0"
-nimbus-jose-jwt = "10.9"
+jwt = "4.5.2"
+bouncy-castle = "1.84"
 kotlin-test = "2.3.21"
 
 [libraries]
@@ -19,7 +20,8 @@ prometheus-pushgateway = { module = "io.prometheus:simpleclient_pushgateway", ve
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-encoder" }
 
-nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus-jose-jwt" }
+auth0-java-jwt = { module = "com.auth0:java-jwt", version.ref = "jwt" }
+bouncy-castle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncy-castle" }
 
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin-test" }

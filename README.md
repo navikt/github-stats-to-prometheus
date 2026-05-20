@@ -38,7 +38,7 @@ All repo-level metrics carry labels: `org`, `team`, `repository`.
 | `EXCLUDED_REPOS` | No | — | Comma-separated repo names to exclude |
 | `GITHUB_PAT` | Either/or | — | Fine-grained personal access token |
 | `GITHUB_APP_ID` | Either/or | — | GitHub App numeric ID |
-| `GITHUB_APP_PRIVATE_KEY` | Either/or | — | App private key, base64-encoded PEM |
+| `GITHUB_APP_PRIVATE_KEY` | Either/or | — | App private key, PEM format |
 | `GITHUB_APP_INSTALLATION_ID` | Either/or | — | GitHub App installation ID |
 
 ### Authentication
@@ -93,7 +93,7 @@ docker run --rm \
   -e GITHUB_TEAMS=team-a,team-b \
   -e GITHUB_APP_ID=123456 \
   -e GITHUB_APP_INSTALLATION_ID=78901234 \
-  -e GITHUB_APP_PRIVATE_KEY=$(base64 -i private-key.pem) \
+  -e GITHUB_APP_PRIVATE_KEY="$(cat private-key.pem)" \
   -e PUSH_GATEWAY_ADDRESS=http://pushgateway:9091 \
   ghcr.io/your-org/github-stats-to-prometheus:latest
 ```
