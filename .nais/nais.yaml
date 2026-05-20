@@ -21,6 +21,10 @@ spec:
       value: "2026-03-10"
     - name: GITHUB_API_URL
       value: "https://api.github.com/"
+    - name: GITHUB_TEAMS
+      value: "appsec"
+    - name: GITHUB_ORG
+      value: "navikt"
   accessPolicy:
     outbound:
       rules:
