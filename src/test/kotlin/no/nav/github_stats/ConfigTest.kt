@@ -3,23 +3,27 @@ package no.nav.github_stats
 import kotlin.test.*
 
 class ConfigTest {
-
-    private val base = mapOf(
-        "GITHUB_ORG" to "my-org",
-        "GITHUB_TEAMS" to "team-a,team-b",
-        "PUSH_GATEWAY_ADDRESS" to "http://pushgateway:9091",
-        "GITHUB_PAT" to "ghp_test"
-    )
+    private val base =
+        mapOf(
+            "GITHUB_ORG" to "my-org",
+            "GITHUB_TEAMS" to "team-a,team-b",
+            "PUSH_GATEWAY_ADDRESS" to "http://pushgateway:9091",
+            "GITHUB_APP_ID" to "123456",
+            "GITHUB_APP_PRIVATE_KEY" to "base64key==",
+            "GITHUB_APP_INSTALLATION_ID" to "78901234",
+        )
 
     @Test
-    fun `parses valid config with PAT`() {
+    fun `parses valid config`() {
         val config = Config.fromEnv(base)
         assertEquals("my-org", config.githubOrg)
         assertEquals(listOf("team-a", "team-b"), config.githubTeams)
         assertEquals("http://pushgateway:9091", config.pushGatewayAddress)
         assertEquals(Role.ADMIN, config.minimumRole)
         assertTrue(config.excludedRepos.isEmpty())
-        assertEquals(AuthMode.Pat("ghp_test"), config.authMode)
+        assertEquals(123456L, config.appId)
+        assertEquals("base64key==", config.privateKey)
+        assertEquals(78901234L, config.installationId)
     }
 
     @Test
@@ -73,7 +77,7 @@ class ConfigTest {
 
     @Test
     fun `fails fast with no auth configured`() {
-        val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(base - "GITHUB_PAT") }
+        val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(base - "GITHUB_APP_ID") }
         assertContains(ex.message!!, "Authentication required")
     }
 
@@ -93,59 +97,27 @@ class ConfigTest {
     }
 
     @Test
-    fun `parses GitHub App auth mode`() {
-        val env = base - "GITHUB_PAT" + mapOf(
-            "GITHUB_APP_ID" to "123456",
-            "GITHUB_APP_PRIVATE_KEY" to "base64key==",
-            "GITHUB_APP_INSTALLATION_ID" to "78901234"
-        )
-        val auth = Config.fromEnv(env).authMode
-        assertIs<AuthMode.App>(auth)
-        assertEquals(123456L, auth.appId)
-        assertEquals(78901234L, auth.installationId)
-        assertEquals("base64key==", auth.privateKey)
-    }
-
-    @Test
-    fun `App auth fails fast when private key is missing`() {
-        val env = base - "GITHUB_PAT" + mapOf(
-            "GITHUB_APP_ID" to "123456",
-            "GITHUB_APP_INSTALLATION_ID" to "78901234"
-        )
-        val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(env) }
+    fun `fails fast when private key is missing`() {
+        val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(base - "GITHUB_APP_PRIVATE_KEY") }
         assertContains(ex.message!!, "GITHUB_APP_PRIVATE_KEY")
     }
 
     @Test
-    fun `App auth fails fast when installation ID is not numeric`() {
-        val env = base - "GITHUB_PAT" + mapOf(
-            "GITHUB_APP_ID" to "123456",
-            "GITHUB_APP_PRIVATE_KEY" to "key",
-            "GITHUB_APP_INSTALLATION_ID" to "not-a-number"
-        )
-        val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(env) }
+    fun `fails fast when installation ID is not numeric`() {
+        val ex =
+            assertFailsWith<IllegalArgumentException> {
+                Config.fromEnv(base + ("GITHUB_APP_INSTALLATION_ID" to "not-a-number"))
+            }
         assertContains(ex.message!!, "GITHUB_APP_INSTALLATION_ID")
     }
 
     @Test
-    fun `App auth fails fast when app ID is not numeric`() {
-        val env = base - "GITHUB_PAT" + mapOf(
-            "GITHUB_APP_ID" to "not-a-number",
-            "GITHUB_APP_PRIVATE_KEY" to "key",
-            "GITHUB_APP_INSTALLATION_ID" to "78901234"
-        )
-        val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(env) }
+    fun `fails fast when app ID is not numeric`() {
+        val ex =
+            assertFailsWith<IllegalArgumentException> {
+                Config.fromEnv(base + ("GITHUB_APP_ID" to "not-a-number"))
+            }
         assertContains(ex.message!!, "GITHUB_APP_ID")
-    }
-
-    @Test
-    fun `App auth takes precedence over PAT when both present`() {
-        val env = base + mapOf(
-            "GITHUB_APP_ID" to "123456",
-            "GITHUB_APP_PRIVATE_KEY" to "key",
-            "GITHUB_APP_INSTALLATION_ID" to "78901234"
-        )
-        assertIs<AuthMode.App>(Config.fromEnv(env).authMode)
     }
 
     @Test

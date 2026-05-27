@@ -3,15 +3,13 @@ package no.nav.github_stats
 import kotlin.test.*
 
 class RoleTest {
-
     private fun perms(
         admin: Boolean = false,
         maintain: Boolean = false,
         push: Boolean = false,
         triage: Boolean = false,
-        pull: Boolean = true
-    ) =
-        Permissions(admin = admin, maintain = maintain, push = push, triage = triage, pull = pull)
+        pull: Boolean = true,
+    ) = Permissions(admin = admin, maintain = maintain, push = push, triage = triage, pull = pull)
 
     @Test
     fun `meetsMinimum is true for same role`() {
@@ -40,20 +38,16 @@ class RoleTest {
         assertEquals(Role.ADMIN, roleFromPermissions(perms(admin = true, maintain = true, push = true)))
 
     @Test
-    fun `roleFromPermissions returns MAINTAIN`() =
-        assertEquals(Role.MAINTAIN, roleFromPermissions(perms(maintain = true, push = true)))
+    fun `roleFromPermissions returns MAINTAIN`() = assertEquals(Role.MAINTAIN, roleFromPermissions(perms(maintain = true, push = true)))
 
     @Test
-    fun `roleFromPermissions returns PUSH`() =
-        assertEquals(Role.PUSH, roleFromPermissions(perms(push = true)))
+    fun `roleFromPermissions returns PUSH`() = assertEquals(Role.PUSH, roleFromPermissions(perms(push = true)))
 
     @Test
-    fun `roleFromPermissions returns TRIAGE`() =
-        assertEquals(Role.TRIAGE, roleFromPermissions(perms(triage = true)))
+    fun `roleFromPermissions returns TRIAGE`() = assertEquals(Role.TRIAGE, roleFromPermissions(perms(triage = true)))
 
     @Test
-    fun `roleFromPermissions returns PULL when only pull`() =
-        assertEquals(Role.PULL, roleFromPermissions(perms()))
+    fun `roleFromPermissions returns PULL when only pull`() = assertEquals(Role.PULL, roleFromPermissions(perms()))
 
     @Test
     fun `Role fromString is case-insensitive`() {
