@@ -40,19 +40,60 @@ class GitHubClientTest {
     private fun client(handler: MockRequestHandleScope.(request: HttpRequestData) -> HttpResponseData) =
         GitHubClient(mockClient(handler), "https://api.github.com/", "my-org")
 
+    // --- orgTeams ---
+
+    @Test fun `orgTeams returns team slugs`() =
+        runBlocking {
+            val c = client { jsonResponse("""[{"slug":"team-a"},{"slug":"team-b"}]""") }
+            assertEquals(listOf("team-a", "team-b"), c.orgTeams())
+        }
+
+    @Test fun `orgTeams returns empty list on 404`() =
+        runBlocking {
+            val c = client { jsonResponse("", HttpStatusCode.NotFound) }
+            assertEquals(emptyList(), c.orgTeams())
+        }
+
+    @Test fun `orgTeams paginates via Link header`() =
+        runBlocking {
+            var page = 0
+            val c =
+                client {
+                    page++
+                    when (page) {
+                        1 -> {
+                            jsonResponse(
+                                """[{"slug":"team-a"}]""",
+                                headers = headersOf("Link", """<https://api.github.com/orgs/my-org/teams?page=2>; rel="next""""),
+                            )
+                        }
+
+                        else -> {
+                            jsonResponse("""[{"slug":"team-b"}]""")
+                        }
+                    }
+                }
+            assertEquals(listOf("team-a", "team-b"), c.orgTeams())
+        }
+
+    @Test fun `orgTeams ignores unknown fields`() =
+        runBlocking {
+            val c = client { jsonResponse("""[{"slug":"team-a","name":"Team A","id":1}]""") }
+            assertEquals(listOf("team-a"), c.orgTeams())
+        }
+
+    // --- teamRepos ---
+
     @Test fun `teamRepos returns parsed repositories`() =
         runBlocking {
             val c =
                 client {
-                    jsonResponse(
-                        """[{"name":"repo-a","archived":false,"visibility":"public","permissions":{"admin":false,"maintain":false,"push":true,"triage":false,"pull":true}}]""",
-                    )
+                    jsonResponse("""[{"name":"repo-a","archived":false,"visibility":"public"}]""")
                 }
             val repos = c.teamRepos("team-x")
             assertEquals(1, repos.size)
             assertEquals("repo-a", repos[0].name)
             assertFalse(repos[0].archived)
-            assertTrue(repos[0].permissions.push)
         }
 
     @Test fun `teamRepos returns empty list on 404`() =
@@ -76,7 +117,7 @@ class GitHubClientTest {
                     when (page) {
                         1 -> {
                             jsonResponse(
-                                """[{"name":"repo-a","archived":false,"visibility":"public","permissions":{"admin":false,"maintain":false,"push":true,"triage":false,"pull":true}}]""",
+                                """[{"name":"repo-a","archived":false,"visibility":"public"}]""",
                                 headers =
                                     headersOf(
                                         "Link",
@@ -86,9 +127,7 @@ class GitHubClientTest {
                         }
 
                         else -> {
-                            jsonResponse(
-                                """[{"name":"repo-b","archived":false,"visibility":"public","permissions":{"admin":true,"maintain":false,"push":true,"triage":false,"pull":true}}]""",
-                            )
+                            jsonResponse("""[{"name":"repo-b","archived":false,"visibility":"public"}]""")
                         }
                     }
                 }
@@ -106,7 +145,7 @@ class GitHubClientTest {
                     when (page) {
                         1 -> {
                             jsonResponse(
-                                """[{"name":"repo-a","archived":false,"visibility":"public","permissions":{"admin":false,"maintain":false,"push":true,"triage":false,"pull":true}}]""",
+                                """[{"name":"repo-a","archived":false,"visibility":"public"}]""",
                                 headers =
                                     headersOf(
                                         "Link",
@@ -120,9 +159,19 @@ class GitHubClientTest {
                         }
                     }
                 }
-            val repos = c.teamRepos("team-x")
-            assertEquals(1, repos.size)
+            assertEquals(1, c.teamRepos("team-x").size)
         }
+
+    @Test fun `teamRepos ignores unknown fields in JSON response`() =
+        runBlocking {
+            val c =
+                client {
+                    jsonResponse("""[{"name":"repo-a","archived":false,"visibility":"public","extra_future_field":"ignored"}]""")
+                }
+            assertEquals(1, c.teamRepos("team-x").size)
+        }
+
+    // --- secretAndCodeScanningAlerts ---
 
     @Test fun `secretAndCodeScanningAlerts returns counts for multiple repos`() =
         runBlocking {
@@ -157,17 +206,5 @@ class GitHubClientTest {
             val result = c.secretAndCodeScanningAlerts(listOf("repo-a"))
             assertEquals(0, result["repo-a"]?.first)
             assertEquals(emptyList(), result["repo-a"]?.second)
-        }
-
-    @Test fun `ignores unknown fields in JSON response`() =
-        runBlocking {
-            val c =
-                client {
-                    jsonResponse(
-                        """[{"name":"repo-a","archived":false,"visibility":"public","permissions":{"admin":false,"maintain":false,"push":true,"triage":false,"pull":true},"extra_future_field":"ignored"}]""",
-                    )
-                }
-            val repos = c.teamRepos("team-x")
-            assertEquals(1, repos.size)
         }
 }

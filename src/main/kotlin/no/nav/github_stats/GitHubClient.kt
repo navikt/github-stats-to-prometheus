@@ -23,6 +23,11 @@ class GitHubClient(
 ) {
     private val semaphore = Semaphore(REST_CONCURRENCY)
 
+    suspend fun orgTeams(): List<String> =
+        fetchAllPages("${apiUrl}orgs/$org/teams") { it.body<List<OrgTeam>>() }
+            .map { it.slug }
+            .also { log.info("Found ${it.size} teams in org '$org'") }
+
     suspend fun teamRepos(team: String): List<OrgRepository> =
         fetchAllPages("${apiUrl}orgs/$org/teams/$team/repos") { it.body<List<OrgRepository>>() }
             .also { log.info("Found ${it.size} repositories for team '$team'") }
@@ -91,20 +96,15 @@ class GitHubClient(
 }
 
 @Serializable
+data class OrgTeam(
+    val slug: String,
+)
+
+@Serializable
 data class OrgRepository(
     val name: String,
     val archived: Boolean,
     val visibility: String,
-    val permissions: Permissions,
-)
-
-@Serializable
-data class Permissions(
-    val admin: Boolean,
-    val maintain: Boolean,
-    val push: Boolean,
-    val triage: Boolean,
-    val pull: Boolean,
 )
 
 @Serializable

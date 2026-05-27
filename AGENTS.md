@@ -33,7 +33,6 @@ Required env vars:
 
 ```
 GITHUB_ORG=navikt
-GITHUB_TEAMS=team-a,team-b
 PUSH_GATEWAY_ADDRESS=dummy
 GITHUB_APP_ID=123456
 GITHUB_APP_INSTALLATION_ID=78901234
@@ -49,26 +48,15 @@ GitHub App only. Requires `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY` (raw PEM), a
 A JWT is signed with BouncyCastle + auth0-java-jwt, exchanged for an installation token
 via the GitHub REST API. Key material is never logged.
 
-## MINIMUM_ROLE
-
-Controls which repos are included. Hierarchy (low → high):
-
-```
-pull < triage < push < maintain < admin
-```
-
-Default: `admin`. The `permissions` object from the GitHub API is used directly — no extra
-API calls. Implemented in `Config.kt` as the `Role` enum with `meetsMinimum()`.
-
 ## Architecture
 
 Six source files, all in `src/main/kotlin/no/nav/github_stats/`:
 
 | File | Responsibility |
 |---|---|
-| `Config.kt` | Env var parsing, fail-fast validation, `Role` enum |
+| `Config.kt` | Env var parsing, fail-fast validation |
 | `GitHubAuth.kt` | GitHub App JWT → installation token |
-| `GitHubClient.kt` | REST calls: team repos + secret/code scanning alerts; pagination via `Link: rel="next"`; semaphore(20) |
+| `GitHubClient.kt` | REST calls: org teams, team repos, secret/code scanning alerts; pagination via `Link: rel="next"`; semaphore(20) |
 | `GitHubGraphQLClient.kt` | Batched GraphQL: PRs, vulnerability alerts, latest commit date; 20 repos/query; pagination |
 | `Metrics.kt` | Prometheus gauge registration, label helpers, push logic |
 | `Main.kt` | Thin orchestrator — wires everything together |
@@ -84,7 +72,8 @@ Hybrid approach: GraphQL for bulk data, REST for endpoints with no GraphQL equiv
 
 | Data | Source |
 |---|---|
-| Team repo list + permissions | REST (`/orgs/{org}/teams/{team}/repos`) |
+| Org team list | REST (`/orgs/{org}/teams`) |
+| Team repo list | REST (`/orgs/{org}/teams/{team}/repos`) |
 | Open PRs | GraphQL |
 | Dependabot vulnerability alerts | GraphQL |
 | Latest commit date | GraphQL |

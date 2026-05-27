@@ -4,43 +4,12 @@ import org.slf4j.LoggerFactory
 
 private val log = LoggerFactory.getLogger("Config")
 
-enum class Role {
-    PULL,
-    TRIAGE,
-    PUSH,
-    MAINTAIN,
-    ADMIN,
-    ;
-
-    fun meetsMinimum(minimum: Role): Boolean = ordinal >= minimum.ordinal
-
-    companion object {
-        fun fromString(value: String): Role =
-            entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
-                ?: throw IllegalArgumentException(
-                    "Invalid MINIMUM_ROLE '$value'. Must be one of: ${entries.joinToString { it.name.lowercase() }}",
-                )
-    }
-}
-
-fun roleFromPermissions(p: Permissions): Role =
-    when {
-        p.admin -> Role.ADMIN
-        p.maintain -> Role.MAINTAIN
-        p.push -> Role.PUSH
-        p.triage -> Role.TRIAGE
-        else -> Role.PULL
-    }
-
 data class Config(
     val githubOrg: String,
-    val githubTeams: List<String>,
     val githubApiUrl: String,
     val githubApiVersion: String,
     val githubGraphqlUrl: String,
     val pushGatewayAddress: String,
-    val minimumRole: Role,
-    val excludedRepos: Set<String>,
     val appId: Long,
     val privateKey: String,
     val installationId: Long,
@@ -62,26 +31,10 @@ data class Config(
             ) = env[key]?.takeIf { it.isNotBlank() } ?: default
 
             val org = require("GITHUB_ORG")
-            val teamsRaw = require("GITHUB_TEAMS")
             val pushGateway = require("PUSH_GATEWAY_ADDRESS")
             val apiUrl = optional("GITHUB_API_URL", "https://api.github.com/").trimEnd('/') + "/"
             val apiVersion = optional("GITHUB_API_VERSION", "2026-03-10")
             val graphqlUrl = optional("GITHUB_GRAPHQL_URL", "https://api.github.com/graphql")
-
-            val minimumRole =
-                try {
-                    Role.fromString(optional("MINIMUM_ROLE", "admin"))
-                } catch (e: IllegalArgumentException) {
-                    errors.add(e.message!!)
-                    Role.PUSH
-                }
-
-            val excludedRepos =
-                optional("EXCLUDED_REPOS")
-                    .split(",")
-                    .map { it.trim() }
-                    .filter { it.isNotEmpty() }
-                    .toSet()
 
             val appIdRaw = env["GITHUB_APP_ID"]?.trim()
             val appId: Long?
@@ -112,26 +65,19 @@ data class Config(
                 throw IllegalArgumentException(errors.joinToString("\n  - ", "Configuration errors:\n  - "))
             }
 
-            val teams = teamsRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            if (teams.isEmpty()) throw IllegalArgumentException("GITHUB_TEAMS must contain at least one team slug")
-
             return Config(
                 org,
-                teams,
                 apiUrl,
                 apiVersion,
                 graphqlUrl,
                 pushGateway,
-                minimumRole,
-                excludedRepos,
                 appId!!,
                 privateKey!!,
                 installationId!!,
             ).also {
                 log.info(
-                    "org=${it.githubOrg} teams=${it.githubTeams} minimumRole=${it.minimumRole} " +
-                            "auth=App(${it.appId}) " +
-                            "pushGateway=${if (pushGateway == "dummy") "dummy" else pushGateway}",
+                    "org=${it.githubOrg} auth=App(${it.appId}) " +
+                        "pushGateway=${if (pushGateway == "dummy") "dummy" else pushGateway}",
                 )
             }
         }

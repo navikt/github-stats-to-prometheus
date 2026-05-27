@@ -26,13 +26,12 @@ fun main() {
     val metrics = MetricsRegistry()
 
     runBlocking {
-        config.githubTeams.forEach { team ->
+        restClient.orgTeams().forEach { team ->
             log.info("Processing team '$team'")
             val repos =
                 restClient
                     .teamRepos(team)
-                    .filter { !it.archived && it.name !in config.excludedRepos }
-                    .filter { roleFromPermissions(it.permissions).meetsMinimum(config.minimumRole) }
+                    .filter { !it.archived }
                     .also { log.info("Team '$team': ${it.size} repos after filtering") }
 
             val repoNames = repos.map { it.name }
@@ -98,13 +97,7 @@ data class RepoMetrics(
     val latestCommitDate: String? = null,
 ) {
     val openPRs: Int by lazy { pullRequests.size }
-    val openDependenciesSum: Int by lazy {
-        pullRequests
-            .filter { it.authorLogin == "dependabot[bot]" }
-            .map { it.title }
-            .toSet()
-            .size
-    }
+    val openDependenciesSum: Int by lazy { pullRequests.count { it.authorLogin == "dependabot[bot]" } }
     val dependabotCritical: Int by lazy { vulnerabilityAlerts.count { it.severity == "critical" } }
     val dependabotHigh: Int by lazy { vulnerabilityAlerts.count { it.severity == "high" } }
     val dependabotTotal: Int by lazy { vulnerabilityAlerts.size }
@@ -121,7 +114,7 @@ data class RepoMetrics(
 
     override fun toString() =
         "RepoMetrics(repo='$repository', openPRs=$openPRs, dependencyUpdates=$openDependenciesSum, " +
-                "dependabotCritical=$dependabotCritical, dependabotHigh=$dependabotHigh, dependabotTotal=$dependabotTotal, " +
-                "secretAlerts=$secretAlerts, codeScanningCritical=$codeScanningCritical, codeScanningTotal=$codeScanningTotal, " +
-                "daysSinceLastCommit=$daysSinceLatestCommit)"
+            "dependabotCritical=$dependabotCritical, dependabotHigh=$dependabotHigh, dependabotTotal=$dependabotTotal, " +
+            "secretAlerts=$secretAlerts, codeScanningCritical=$codeScanningCritical, codeScanningTotal=$codeScanningTotal, " +
+            "daysSinceLastCommit=$daysSinceLatestCommit)"
 }

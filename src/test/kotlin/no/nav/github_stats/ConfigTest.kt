@@ -6,7 +6,6 @@ class ConfigTest {
     private val base =
         mapOf(
             "GITHUB_ORG" to "my-org",
-            "GITHUB_TEAMS" to "team-a,team-b",
             "PUSH_GATEWAY_ADDRESS" to "http://pushgateway:9091",
             "GITHUB_APP_ID" to "123456",
             "GITHUB_APP_PRIVATE_KEY" to "base64key==",
@@ -17,10 +16,7 @@ class ConfigTest {
     fun `parses valid config`() {
         val config = Config.fromEnv(base)
         assertEquals("my-org", config.githubOrg)
-        assertEquals(listOf("team-a", "team-b"), config.githubTeams)
         assertEquals("http://pushgateway:9091", config.pushGatewayAddress)
-        assertEquals(Role.ADMIN, config.minimumRole)
-        assertTrue(config.excludedRepos.isEmpty())
         assertEquals(123456L, config.appId)
         assertEquals("base64key==", config.privateKey)
         assertEquals(78901234L, config.installationId)
@@ -39,34 +35,9 @@ class ConfigTest {
     }
 
     @Test
-    fun `parses MINIMUM_ROLE case-insensitively`() {
-        assertEquals(Role.MAINTAIN, Config.fromEnv(base + ("MINIMUM_ROLE" to "maintain")).minimumRole)
-        assertEquals(Role.ADMIN, Config.fromEnv(base + ("MINIMUM_ROLE" to "ADMIN")).minimumRole)
-        assertEquals(Role.PULL, Config.fromEnv(base + ("MINIMUM_ROLE" to "pull")).minimumRole)
-    }
-
-    @Test
-    fun `parses EXCLUDED_REPOS`() {
-        val config = Config.fromEnv(base + ("EXCLUDED_REPOS" to "repo-a, repo-b , repo-c"))
-        assertEquals(setOf("repo-a", "repo-b", "repo-c"), config.excludedRepos)
-    }
-
-    @Test
-    fun `trims whitespace from team slugs`() {
-        val config = Config.fromEnv(base + ("GITHUB_TEAMS" to " team-a , team-b "))
-        assertEquals(listOf("team-a", "team-b"), config.githubTeams)
-    }
-
-    @Test
     fun `fails fast on missing GITHUB_ORG`() {
         val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(base - "GITHUB_ORG") }
         assertContains(ex.message!!, "GITHUB_ORG")
-    }
-
-    @Test
-    fun `fails fast on missing GITHUB_TEAMS`() {
-        val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(base - "GITHUB_TEAMS") }
-        assertContains(ex.message!!, "GITHUB_TEAMS")
     }
 
     @Test
@@ -82,16 +53,9 @@ class ConfigTest {
     }
 
     @Test
-    fun `fails fast on invalid MINIMUM_ROLE`() {
-        val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(base + ("MINIMUM_ROLE" to "superadmin")) }
-        assertContains(ex.message!!, "MINIMUM_ROLE")
-    }
-
-    @Test
     fun `accumulates multiple validation errors`() {
         val ex = assertFailsWith<IllegalArgumentException> { Config.fromEnv(emptyMap()) }
         assertContains(ex.message!!, "GITHUB_ORG")
-        assertContains(ex.message!!, "GITHUB_TEAMS")
         assertContains(ex.message!!, "PUSH_GATEWAY_ADDRESS")
         assertContains(ex.message!!, "Authentication required")
     }
