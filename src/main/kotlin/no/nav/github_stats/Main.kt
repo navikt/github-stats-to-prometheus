@@ -82,6 +82,7 @@ private fun buildHttpClient(
             defaultRequest {
                 header(HttpHeaders.Authorization, "Bearer $it")
                 header(HttpHeaders.Accept, "application/vnd.github+json")
+                header(HttpHeaders.UserAgent, "Appsec github stats")
                 apiVersion?.let { v -> header("X-GitHub-Api-Version", v) }
                 contentType(ContentType.Application.Json)
             }
