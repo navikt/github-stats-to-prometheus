@@ -7,7 +7,7 @@ metadata:
   namespace: appsec
 spec:
   image: "{{ image }}"
-  schedule: "0 10,11,14,15,23 * * *"
+  schedule: "0 6-18 * * *"
   timeZone: Europe/Oslo
   failedJobsHistoryLimit: 1
   successfulJobsHistoryLimit: 1

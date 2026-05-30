@@ -1,8 +1,8 @@
 # github-stats-to-prometheus
 
 A Kotlin batch job that queries the GitHub API for security and activity metrics across
-repositories owned by one or more teams in a GitHub organisation, then pushes the results
-to a Prometheus Pushgateway.
+repositories owned by all teams in a GitHub organisation, then pushes the results to a
+Prometheus Pushgateway.
 
 Runs as a one-shot batch job — no web server. Designed for use as a Kubernetes CronJob
 or NAIS Naisjob.
@@ -16,7 +16,7 @@ All metrics carry labels: `org`, `team`, `repository`.
 | Metric | Description |
 |---|---|
 | `github_stats_open_prs` | Open pull requests |
-| `github_stats_dependency_updates` | Open Dependabot PRs (grouped PRs expanded to individual count) |
+| `github_stats_dependency_updates` | Open Dependabot PRs |
 | `github_stats_dependabot_alerts_critical` | Critical Dependabot CVE alerts |
 | `github_stats_dependabot_alerts_high` | High Dependabot CVE alerts |
 | `github_stats_dependabot_alerts_total` | All open Dependabot CVE alerts |
@@ -50,6 +50,94 @@ Required GitHub App permissions:
 - Repository: `Contents (read)`, `Pull requests (read)`, `Dependabot alerts (read)`,
   `Secret scanning alerts (read)`, `Code scanning alerts (read)`
 - Organisation: `Members (read)`
+
+---
+
+## Deploying as a NAIS Naisjob
+
+Store credentials in a Kubernetes secret and inject them via `envFrom`. The secret must
+contain `GITHUB_ORG`, `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, and
+`GITHUB_APP_INSTALLATION_ID`.
+
+```yaml
+apiVersion: nais.io/v1
+kind: Naisjob
+metadata:
+  labels:
+    team: my-team
+  name: my-team-github-stats
+  namespace: my-team
+spec:
+  image: "{{ image }}"
+  schedule: "0 * * * *"
+  timeZone: Europe/Oslo
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 1
+  backoffLimit: 1
+  envFrom:
+    - secret: my-team-github-stats
+  env:
+    - name: PUSH_GATEWAY_ADDRESS
+      value: "prometheus-pushgateway.nais-system:9091"
+  accessPolicy:
+    outbound:
+      rules:
+        - application: prometheus-pushgateway
+          namespace: nais-system
+      external:
+        - host: "api.github.com"
+```
+
+---
+
+## Grafana
+
+All queries below use a `$team` variable backed by the `team` label and an `$org` variable
+backed by the `org` label. Use `max by (repository)` to deduplicate repos that appear under
+multiple teams.
+
+### Open PRs per repository
+
+```promql
+max by (repository) (github_stats_open_prs{org="$org", team="$team"})
+```
+
+### Dependabot PRs per repository
+
+```promql
+max by (repository) (github_stats_dependency_updates{org="$org", team="$team"})
+```
+
+### Critical CVE alerts per repository
+
+```promql
+max by (repository) (
+  github_stats_dependabot_alerts_critical{org="$org", team="$team"}
+  + github_stats_code_scanning_alerts_critical{org="$org", team="$team"}
+)
+```
+
+### Secret scanning alerts
+
+```promql
+max by (repository) (github_stats_secret_scanning_alerts{org="$org", team="$team"} > 0)
+```
+
+### Stale repositories (no commit in 90 days)
+
+```promql
+max by (repository) (github_stats_last_commit_age_days{org="$org", team="$team"} > 90)
+```
+
+---
+
+## Building locally
+
+```bash
+./gradlew installDist
+./gradlew test
+docker build -t github-stats-to-prometheus .
+```
 
 ---
 
