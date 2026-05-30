@@ -71,7 +71,7 @@ class GitHubGraphQLClientTest {
                         graphqlResponse(
                             repoFragment(
                                 alias = "repo0",
-                                prs = """[{"title":"Fix bug","author":{"login":"octocat"}},{"title":"Bump dep","author":{"login":"dependabot[bot]"}}]""",
+                                prs = """[{"title":"Fix bug","author":{"login":"octocat"}},{"title":"Bump dep","author":{"login":"dependabot"}}]""",
                                 alerts = """[{"securityVulnerability":{"severity":"CRITICAL"}},{"securityVulnerability":{"severity":"HIGH"}}]""",
                             ),
                         ),
@@ -81,7 +81,7 @@ class GitHubGraphQLClientTest {
             val data = result["repo-a"]
             assertNotNull(data)
             assertEquals(2, data.pullRequests.size)
-            assertEquals("dependabot[bot]", data.pullRequests[1].authorLogin)
+            assertEquals("dependabot", data.pullRequests[1].authorLogin)
             assertEquals(2, data.vulnerabilityAlerts.size)
             assertEquals("critical", data.vulnerabilityAlerts[0].severity)
             assertEquals("2024-06-01T12:00:00Z", data.latestCommitDate)

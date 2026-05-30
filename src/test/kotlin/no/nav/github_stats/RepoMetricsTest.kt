@@ -10,7 +10,7 @@ class RepoMetricsTest {
         login: String? = "octocat",
     ) = GraphQLPullRequest(title = title, authorLogin = login)
 
-    private fun dependabotPr(title: String) = pr(title, login = "dependabot[bot]")
+    private fun dependabotPr(title: String) = pr(title, login = "dependabot")
 
     private fun alert(severity: String) = GraphQLVulnerabilityAlert(severity = severity)
 

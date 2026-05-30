@@ -20,9 +20,17 @@ fun main() {
     val config = Config.fromEnv()
     val token = resolveToken(config, buildHttpClient())
     val restClient =
-        GitHubClient(buildHttpClient(config.githubApiVersion, token), config.githubApiUrl, config.githubOrg)
+        GitHubClient(
+            buildHttpClient(config.githubApiVersion, token),
+            config.githubApiUrl,
+            config.githubOrg,
+        )
     val graphqlClient =
-        GitHubGraphQLClient(buildHttpClient(config.githubApiVersion, token), config.githubGraphqlUrl, config.githubOrg)
+        GitHubGraphQLClient(
+            buildHttpClient(config.githubApiVersion, token),
+            config.githubGraphqlUrl,
+            config.githubOrg,
+        )
     val metrics = MetricsRegistry()
 
     runBlocking {
@@ -98,7 +106,7 @@ data class RepoMetrics(
     val latestCommitDate: String? = null,
 ) {
     val openPRs: Int by lazy { pullRequests.size }
-    val openDependenciesSum: Int by lazy { pullRequests.count { it.authorLogin == "dependabot[bot]" } }
+    val openDependenciesSum: Int by lazy { pullRequests.count { it.authorLogin == "dependabot" } }
     val dependabotCritical: Int by lazy { vulnerabilityAlerts.count { it.severity == "critical" } }
     val dependabotHigh: Int by lazy { vulnerabilityAlerts.count { it.severity == "high" } }
     val dependabotTotal: Int by lazy { vulnerabilityAlerts.size }
