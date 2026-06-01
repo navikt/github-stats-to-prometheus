@@ -1,11 +1,11 @@
 # github-stats-to-prometheus
 
 A Kotlin batch job that queries the GitHub API for security and activity metrics across
-repositories owned by all teams in a GitHub organisation, then pushes the results to a
+repositories owned by all teams in a GitHub organization, then pushes the results to a
 Prometheus Pushgateway.
 
 Runs as a one-shot batch job — no web server. Designed for use as a Kubernetes CronJob
-or NAIS Naisjob.
+or Naisjob.
 
 ---
 
@@ -43,8 +43,7 @@ All metrics carry labels: `org`, `team`, `repository`.
 ### Authentication
 
 GitHub App only. A short-lived installation token is fetched at startup using a JWT signed
-with the app's private key. The token is valid for one hour; the job completes in seconds.
-Key material is never logged.
+with the app's private key. The token is valid for one hour.
 
 Required GitHub App permissions:
 - Repository: `Contents (read)`, `Pull requests (read)`, `Dependabot alerts (read)`,
@@ -53,9 +52,9 @@ Required GitHub App permissions:
 
 ---
 
-## Deploying as a NAIS Naisjob
+## Deploying as a Naisjob
 
-Store credentials in a Kubernetes secret and inject them via `envFrom`. The secret must
+Store credentials in a Nais Console secret and inject them via `envFrom`. The secret must
 contain `GITHUB_ORG`, `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, and
 `GITHUB_APP_INSTALLATION_ID`.
 

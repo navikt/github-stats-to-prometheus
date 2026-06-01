@@ -34,13 +34,15 @@ fun main() {
     val metrics = MetricsRegistry()
 
     runBlocking {
-        restClient.orgTeams().forEach { team ->
-            log.info("Processing team '$team'")
+        val teams = restClient.orgTeams()
+        log.info("Starting — ${teams.size} teams in '${config.githubOrg}'")
+        teams.forEachIndexed { index, team ->
+            log.debug("Processing team '$team'")
             val repos =
                 restClient
                     .teamRepos(team)
                     .filter { !it.archived }
-                    .also { log.info("Team '$team': ${it.size} repos after filtering") }
+                    .also { log.debug("Team '$team': ${it.size} repos after filtering") }
 
             val repoNames = repos.map { it.name }
             val graphqlData = graphqlClient.fetchRepoData(repoNames)
@@ -56,7 +58,7 @@ fun main() {
                     secretAlerts = secretAlerts,
                     codeScanningAlerts = codeScanningAlerts,
                     latestCommitDate = gql.latestCommitDate,
-                ).also { log.info("Metrics for '${repo.name}': $it") }
+                ).also { log.debug("Metrics for '${repo.name}': $it") }
                     .also { metrics.record(config.githubOrg, team, it) }
             }
         }

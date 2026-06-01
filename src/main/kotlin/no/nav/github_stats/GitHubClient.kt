@@ -26,11 +26,11 @@ class GitHubClient(
     suspend fun orgTeams(): List<String> =
         fetchAllPages("${apiUrl}orgs/$org/teams") { it.body<List<OrgTeam>>() }
             .map { it.slug }
-            .also { log.info("Found ${it.size} teams in org '$org'") }
+            .also { log.debug("Found ${it.size} teams in org '$org'") }
 
     suspend fun teamRepos(team: String): List<OrgRepository> =
         fetchAllPages("${apiUrl}orgs/$org/teams/$team/repos") { it.body<List<OrgRepository>>() }
-            .also { log.info("Found ${it.size} repositories for team '$team'") }
+            .also { log.debug("Found ${it.size} repositories for team '$team'") }
 
     suspend fun secretAndCodeScanningAlerts(repos: List<String>): Map<String, Pair<Int, List<CodescanningAlert>>> =
         coroutineScope {
@@ -68,7 +68,11 @@ class GitHubClient(
                     parameter("state", "open")
                 }
             if (!response.status.isSuccess()) {
-                log.warn("HTTP ${response.status} fetching '$nextUrl'")
+                if (response.status == HttpStatusCode.NotFound) {
+                    log.debug("HTTP 404 fetching '$nextUrl' (public repo or secret scanning disabled)")
+                } else {
+                    log.warn("HTTP ${response.status} fetching '$nextUrl'")
+                }
                 break
             }
             results.addAll(parse(response))
