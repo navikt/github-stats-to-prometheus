@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.4.0"
-ktor = "3.5.0"
-logback = "1.5.34"
+ktor = "3.5.1"
+logback = "1.5.37"
 logstash-encoder = "9.0"
 prometheus = "0.16.0"
 jwt = "4.5.2"
