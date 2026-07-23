@@ -1,12 +1,12 @@
 [versions]
-kotlin = "2.4.0"
+kotlin = "2.4.10"
 ktor = "3.5.1"
 logback = "1.5.38"
 logstash-encoder = "9.0"
 prometheus = "0.16.0"
 jwt = "4.6.0"
 bouncy-castle = "1.85"
-kotlin-test = "2.4.0"
+kotlin-test = "2.4.10"
 
 [libraries]
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
