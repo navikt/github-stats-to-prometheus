@@ -36,19 +36,20 @@ fun main() {
     runBlocking {
         val teams = restClient.orgTeams()
         log.info("Starting — ${teams.size} teams in '${config.githubOrg}'")
-        teams.forEachIndexed { index, team ->
+        teams.forEach { team ->
             log.debug("Processing team '$team'")
             val repos =
                 restClient
                     .teamRepos(team)
                     .filter { !it.archived }
-                    .also { log.debug("Team '$team': ${it.size} repos after filtering") }
+                    .also { log.info("Team '$team' has ${it.size} un-archived repos") }
 
             val repoNames = repos.map { it.name }
             val graphqlData = graphqlClient.fetchRepoData(repoNames)
             val restData = restClient.secretAndCodeScanningAlerts(repoNames)
 
             repos.forEach { repo ->
+                log.info("Processing repo '$repo' for $team")
                 val gql = graphqlData[repo.name] ?: GraphQLRepoData(emptyList(), emptyList(), null)
                 val (secretAlerts, codeScanningAlerts) = restData[repo.name] ?: Pair(0, emptyList())
                 RepoMetrics(
