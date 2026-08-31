@@ -12,6 +12,7 @@ spec:
   failedJobsHistoryLimit: 1
   successfulJobsHistoryLimit: 1
   backoffLimit: 1
+  activeDeadlineSeconds: 3000
   envFrom:
     - secret: appsec-stats-config
   env:
