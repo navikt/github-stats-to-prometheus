@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 
 private val log = LoggerFactory.getLogger("Main")
 
@@ -48,19 +50,23 @@ fun main() {
             val graphqlData = graphqlClient.fetchRepoData(repoNames)
             val restData = restClient.secretAndCodeScanningAlerts(repoNames)
 
-            repos.forEach { repo ->
-                log.info("Processing repo '$repo' for $team")
-                val gql = graphqlData[repo.name] ?: GraphQLRepoData(emptyList(), emptyList(), null)
-                val (secretAlerts, codeScanningAlerts) = restData[repo.name] ?: Pair(0, emptyList())
-                RepoMetrics(
-                    repository = repo.name,
-                    pullRequests = gql.pullRequests,
-                    vulnerabilityAlerts = gql.vulnerabilityAlerts,
-                    secretAlerts = secretAlerts,
-                    codeScanningAlerts = codeScanningAlerts,
-                    latestCommitDate = gql.latestCommitDate,
-                ).also { log.debug("Metrics for '${repo.name}': $it") }
-                    .also { metrics.record(config.githubOrg, team, it) }
+            repos.windowed(5, 5).forEach { window ->
+                window.map { repo ->
+                    async {
+                        log.info("Processing repo '$repo' for $team")
+                        val gql = graphqlData[repo.name] ?: GraphQLRepoData(emptyList(), emptyList(), null)
+                        val (secretAlerts, codeScanningAlerts) = restData[repo.name] ?: Pair(0, emptyList())
+                        RepoMetrics(
+                            repository = repo.name,
+                            pullRequests = gql.pullRequests,
+                            vulnerabilityAlerts = gql.vulnerabilityAlerts,
+                            secretAlerts = secretAlerts,
+                            codeScanningAlerts = codeScanningAlerts,
+                            latestCommitDate = gql.latestCommitDate,
+                        ).also { log.debug("Metrics for '${repo.name}': $it") }
+                            .also { metrics.record(config.githubOrg, team, it) }
+                    }
+                }.awaitAll()
             }
         }
     }
