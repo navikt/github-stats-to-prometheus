@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.4.20"
-ktor = "3.5.2"
+ktor = "3.6.0"
 logback = "1.6.3"
 logstash-encoder = "9.0"
 prometheus = "0.16.0"
