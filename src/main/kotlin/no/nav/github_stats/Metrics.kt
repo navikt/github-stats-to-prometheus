@@ -4,6 +4,7 @@ import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.Gauge
 import io.prometheus.client.exporter.PushGateway
 import org.slf4j.LoggerFactory
+import java.io.IOException
 
 private val log = LoggerFactory.getLogger("Metrics")
 private val LABELS = arrayOf("org", "team", "repository")
@@ -57,7 +58,34 @@ class MetricsRegistry {
     ) {
         if (address == "dummy") return log.info("Skipping push (dummy)")
         log.info("Pushing metrics to $address")
-        PushGateway(address).push(registry, "github-stats", mapOf("instance" to org))
+        val gateway = PushGateway(address)
+        retryOnIOException(attempts = PUSH_ATTEMPTS, initialDelayMs = PUSH_INITIAL_DELAY_MS) {
+            gateway.push(registry, "github-stats", mapOf("instance" to org))
+        }
         log.info("Metrics pushed successfully")
     }
+}
+
+private const val PUSH_ATTEMPTS = 3
+private const val PUSH_INITIAL_DELAY_MS = 2_000L
+
+internal fun retryOnIOException(
+    attempts: Int,
+    initialDelayMs: Long,
+    sleep: (Long) -> Unit = { Thread.sleep(it) },
+    block: () -> Unit,
+) {
+    require(attempts >= 1) { "attempts must be >= 1" }
+    var delayMs = initialDelayMs
+    repeat(attempts - 1) { attempt ->
+        try {
+            block()
+            return
+        } catch (e: IOException) {
+            log.warn("Attempt ${attempt + 1}/$attempts failed: ${e.message}. Retrying in ${delayMs}ms")
+            sleep(delayMs)
+            delayMs *= 2
+        }
+    }
+    block()
 }

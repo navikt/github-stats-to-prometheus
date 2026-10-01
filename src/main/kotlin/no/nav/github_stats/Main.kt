@@ -10,11 +10,13 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import java.io.IOException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlin.system.exitProcess
 
 private val log = LoggerFactory.getLogger("Main")
 
@@ -50,7 +52,7 @@ fun main() {
             val graphqlData = graphqlClient.fetchRepoData(repoNames)
             val restData = restClient.secretAndCodeScanningAlerts(repoNames)
 
-            repos.windowed(5, 5).forEach { window ->
+            repos.chunked(5).forEach { window ->
                 window.map { repo ->
                     async {
                         log.info("Processing repo '$repo' for $team")
@@ -71,7 +73,12 @@ fun main() {
         }
     }
 
-    metrics.push(config.pushGatewayAddress, config.githubOrg)
+    try {
+        metrics.push(config.pushGatewayAddress, config.githubOrg)
+    } catch (e: IOException) {
+        log.error("Giving up pushing metrics to ${config.pushGatewayAddress}", e)
+        exitProcess(1)
+    }
     log.info("Finished successfully")
 }
 
