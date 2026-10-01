@@ -50,7 +50,7 @@ fun main() {
             val graphqlData = graphqlClient.fetchRepoData(repoNames)
             val restData = restClient.secretAndCodeScanningAlerts(repoNames)
 
-            repos.windowed(5, 5).forEach { window ->
+            repos.chunked(5).forEach { window ->
                 window.map { repo ->
                     async {
                         log.info("Processing repo '$repo' for $team")
