@@ -21,6 +21,16 @@ import kotlin.system.exitProcess
 private val log = LoggerFactory.getLogger("Main")
 
 fun main() {
+    try {
+        run()
+    } catch (e: Throwable) {
+        // Without this, uncaught errors go to stderr as plain text and are lost among the JSON logs
+        log.error("Fatal error, terminating: ${e::class.qualifiedName}: ${e.message}", e)
+        exitProcess(1)
+    }
+}
+
+private fun run() {
     val config = Config.fromEnv()
     val token = resolveToken(config, buildHttpClient())
     val restClient =
