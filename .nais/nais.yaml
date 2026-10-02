@@ -13,6 +13,12 @@ spec:
   successfulJobsHistoryLimit: 1
   backoffLimit: 0
   activeDeadlineSeconds: 3000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
   envFrom:
     - secret: appsec-stats-config
   env:
@@ -26,6 +32,9 @@ spec:
       value: "appsec"
     - name: GITHUB_ORG
       value: "navikt"
+    # Default heap is 25% of the container limit; ExitOnOutOfMemoryError makes OOM fail fast with a log line instead of a silent hang/kill
+    - name: JAVA_TOOL_OPTIONS
+      value: "-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
   accessPolicy:
     outbound:
       rules:
