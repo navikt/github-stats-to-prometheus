@@ -11,7 +11,8 @@ spec:
   timeZone: Europe/Oslo
   failedJobsHistoryLimit: 1
   successfulJobsHistoryLimit: 1
-  backoffLimit: 0
+  backoffLimit: 1
+  concurrencyPolicy: Replace
   activeDeadlineSeconds: 3000
   resources:
     requests:
