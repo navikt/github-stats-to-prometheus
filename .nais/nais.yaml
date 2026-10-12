@@ -9,8 +9,8 @@ spec:
   image: "{{ image }}"
   schedule: "0 6-18 * * *"
   timeZone: Europe/Oslo
-  failedJobsHistoryLimit: 1
-  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 0
+  ttlSecondsAfterFinished: 300
   backoffLimit: 1
   concurrencyPolicy: Replace
   activeDeadlineSeconds: 3000
