@@ -16,9 +16,12 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlin.system.exitProcess
 
 private val log = LoggerFactory.getLogger("Main")
+private const val TEAM_CONCURRENCY = 4
 
 fun main() {
     try {
@@ -50,40 +53,45 @@ private fun run() {
     runBlocking {
         val teams = restClient.orgTeams()
         log.info("Starting — ${teams.size} teams in '${config.githubOrg}'")
-        teams.forEach { team ->
-            log.debug("Processing team '$team'")
-            val repos =
-                restClient
-                    .teamRepos(team)
-                    .filter { !it.archived }
-                    .also { log.info("Team '$team' has ${it.size} un-archived repos") }
+        val teamPermits = Semaphore(TEAM_CONCURRENCY)
+        teams.map { team ->
+            async {
+                teamPermits.withPermit {
+                    log.debug("Processing team '$team'")
+                    val repos =
+                        restClient
+                            .teamRepos(team)
+                            .filter { !it.archived }
+                            .also { log.info("Team '$team' has ${it.size} un-archived repos") }
 
-            val repoNames = repos.map { it.name }
-            log.info("Team '$team': fetching GraphQL data for ${repoNames.size} repos")
-            val graphqlData = graphqlClient.fetchRepoData(repoNames)
-            log.info("Team '$team': fetching secret/code scanning alerts")
-            val restData = restClient.secretAndCodeScanningAlerts(repoNames)
-            log.info("Team '$team': fetched all data")
+                    val repoNames = repos.map { it.name }
+                    log.info("Team '$team': fetching GraphQL data for ${repoNames.size} repos")
+                    val graphqlData = graphqlClient.fetchRepoData(repoNames)
+                    log.info("Team '$team': fetching secret/code scanning alerts")
+                    val restData = restClient.secretAndCodeScanningAlerts(repoNames)
+                    log.info("Team '$team': fetched all data")
 
-            repos.chunked(5).forEach { window ->
-                window.map { repo ->
-                    async {
-                        log.info("Processing repo '$repo' for $team")
-                        val gql = graphqlData[repo.name] ?: GraphQLRepoData(emptyList(), emptyList(), null)
-                        val (secretAlerts, codeScanningAlerts) = restData[repo.name] ?: Pair(0, emptyList())
-                        RepoMetrics(
-                            repository = repo.name,
-                            pullRequests = gql.pullRequests,
-                            vulnerabilityAlerts = gql.vulnerabilityAlerts,
-                            secretAlerts = secretAlerts,
-                            codeScanningAlerts = codeScanningAlerts,
-                            latestCommitDate = gql.latestCommitDate,
-                        ).also { log.debug("Metrics for '${repo.name}': $it") }
-                            .also { metrics.record(config.githubOrg, team, it) }
+                    repos.chunked(5).forEach { window ->
+                        window.map { repo ->
+                            async {
+                                log.info("Processing repo '$repo' for $team")
+                                val gql = graphqlData[repo.name] ?: GraphQLRepoData(emptyList(), emptyList(), null)
+                                val (secretAlerts, codeScanningAlerts) = restData[repo.name] ?: Pair(0, emptyList())
+                                RepoMetrics(
+                                    repository = repo.name,
+                                    pullRequests = gql.pullRequests,
+                                    vulnerabilityAlerts = gql.vulnerabilityAlerts,
+                                    secretAlerts = secretAlerts,
+                                    codeScanningAlerts = codeScanningAlerts,
+                                    latestCommitDate = gql.latestCommitDate,
+                                ).also { log.debug("Metrics for '${repo.name}': $it") }
+                                    .also { metrics.record(config.githubOrg, team, it) }
+                            }
+                        }.awaitAll()
                     }
-                }.awaitAll()
+                }
             }
-        }
+        }.awaitAll()
     }
 
     try {
