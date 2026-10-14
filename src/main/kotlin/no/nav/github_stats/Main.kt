@@ -59,8 +59,11 @@ private fun run() {
                     .also { log.info("Team '$team' has ${it.size} un-archived repos") }
 
             val repoNames = repos.map { it.name }
+            log.info("Team '$team': fetching GraphQL data for ${repoNames.size} repos")
             val graphqlData = graphqlClient.fetchRepoData(repoNames)
+            log.info("Team '$team': fetching secret/code scanning alerts")
             val restData = restClient.secretAndCodeScanningAlerts(repoNames)
+            log.info("Team '$team': fetched all data")
 
             repos.chunked(5).forEach { window ->
                 window.map { repo ->
@@ -104,6 +107,11 @@ private fun buildHttpClient(
                     ignoreUnknownKeys = true
                 },
             )
+        }
+        install(HttpTimeout) {
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 60_000
+            requestTimeoutMillis = 120_000
         }
         install(HttpRequestRetry) {
             maxRetries = 3

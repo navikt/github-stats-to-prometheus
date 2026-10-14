@@ -181,7 +181,7 @@ class GitHubGraphQLClient(
                 """
                 query {
                   repository(owner: "$org", name: "$repo") {
-                    vulnerabilityAlerts(states: OPEN, first: 100, after: "$cursor") {
+                    vulnerabilityAlerts(states: OPEN, first: 25, after: "$cursor") {
                       nodes { securityVulnerability { severity } }
                       pageInfo { hasNextPage endCursor }
                     }
@@ -278,7 +278,7 @@ class GitHubGraphQLClient(
                         nodes { title author { login } }
                         pageInfo { hasNextPage endCursor }
                       }
-                      vulnerabilityAlerts(states: OPEN, first: 100) {
+                      vulnerabilityAlerts(states: OPEN, first: 25) {
                         nodes { securityVulnerability { severity } }
                         pageInfo { hasNextPage endCursor }
                       }
