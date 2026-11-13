@@ -3,6 +3,7 @@ kotlin = "2.4.21"
 ktor = "3.6.1"
 logback = "1.6.6"
 logstash-encoder = "9.0"
+jackson = "3.1.7"
 prometheus = "0.16.0"
 jwt = "4.6.2"
 bouncy-castle = "1.86"
@@ -19,6 +20,7 @@ prometheus-pushgateway = { module = "io.prometheus:simpleclient_pushgateway", ve
 
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-encoder" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
 
 auth0-java-jwt = { module = "com.auth0:java-jwt", version.ref = "jwt" }
 bouncy-castle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncy-castle" }
