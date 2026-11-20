@@ -1,12 +1,12 @@
 [versions]
 kotlin = "2.4.21"
 ktor = "3.6.1"
-logback = "1.6.6"
+logback = "1.6.7"
 logstash-encoder = "9.0"
-jackson = "3.1.7"
+jackson = "3.3.0"
 prometheus = "0.16.0"
 jwt = "4.6.2"
-bouncy-castle = "1.86"
+bouncy-castle = "1.87"
 kotlin-test = "2.4.21"
 
 [libraries]
